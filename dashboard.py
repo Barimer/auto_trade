@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 from datetime import datetime, timedelta
+import batch_analyzer
 
 # --- 페이지 설정 ---
 st.set_page_config(layout="wide", page_title="Trading Dashboard", page_icon="📊")
@@ -17,16 +18,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 데이터 로드 ---
-@st.cache_data
+
+# [새로 넣을 부분]
+# ttl=600은 10분 동안 분석 결과를 저장(캐시)한다는 뜻입니다.
+@st.cache_data(ttl=600, show_spinner="실시간 데이터 분석 중입니다... 잠시만 기다려주세요.")
 def load_data():
-    if not os.path.exists("analysis_results.json"):
-        return pd.DataFrame()
-    
-    with open("analysis_results.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    
-    df = pd.DataFrame(data)
-    return df
+    # 파일 읽기 대신, batch_analyzer의 분석 함수를 직접 실행합니다.
+    raw_data = batch_analyzer.get_analysis_results()
+    return pd.DataFrame(raw_data)
 
 def main():
     st.caption(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -426,3 +425,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
