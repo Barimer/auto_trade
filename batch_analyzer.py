@@ -298,17 +298,19 @@ def calculate_metrics(balance, initial_balance, trades, df, strategy_name):
         "last_price": df['close'].iloc[-1]
     }
 
-# --- 메인 실행 ---
-def main():
+# ... (위쪽 import 및 함수들은 그대로 유지) ...
+
+# --- [수정됨] 메인 실행 함수: 결과를 리턴하도록 변경 ---
+def get_analysis_results():
     results = []
-    print("Starting Batch Analysis...")
+    print("Starting Analysis...")
     
-    # 현재 시간 저장 (모든 결과에 동일한 timestamp 적용)
     current_time = datetime.now().isoformat()
-    
-    # 총 작업 수: 자산 * 봉길이 * 전략수(3개)
     total_tasks = len(ASSET_LIST) * len(INTERVALS) * 3 
     completed = 0
+    
+    # 진행 상황을 표시하기 위해 Streamlit의 progress bar를 쓸 수도 있지만, 
+    # 일단 로직 분리를 위해 순수 파이썬 로직만 남깁니다.
     
     for asset in ASSET_LIST:
         ticker = asset['ticker']
@@ -317,8 +319,6 @@ def main():
         category = asset.get('category', '기타')
         
         for interval in INTERVALS:
-            print(f"[{completed}/{total_tasks}] Processing {name} ({interval})...")
-            
             # 데이터 가져오기
             df = get_data(ticker, source, interval)
             
@@ -339,12 +339,11 @@ def main():
                     results.append({"asset": name, "ticker": ticker, "category": category, "interval": interval, "strategy": "EMA Cross", "timestamp": current_time, **res3})
             
             completed += 3
+            
+    print("Analysis Complete.")
+    return results  # [중요] JSON 저장 대신 데이터를 반환합니다!
 
-    # 결과 저장
-    with open("analysis_results.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=4)
-    
-    print("Analysis Complete. Saved to analysis_results.json")
-
+# 로컬에서 테스트할 때만 실행되도록 설정
 if __name__ == "__main__":
-    main()
+    data = get_analysis_results()
+    print(f"데이터 {len(data)}개 생성 완료")
