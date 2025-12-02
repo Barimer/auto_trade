@@ -1,0 +1,8 @@
+pandas
+pandas_ta
+yfinance
+pyupbit
+streamlit
+youtube-transcript-api
+openai
+python-dotenv
