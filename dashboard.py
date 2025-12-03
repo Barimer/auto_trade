@@ -19,12 +19,23 @@ st.markdown("""
 
 # --- 데이터 로드 ---
 
-# [새로 넣을 부분]
-# ttl=600은 10분 동안 분석 결과를 저장(캐시)한다는 뜻입니다.
-@st.cache_data(ttl=600, show_spinner="실시간 데이터 분석 중입니다... 잠시만 기다려주세요.")
-def load_data():
-    # 파일 읽기 대신, batch_analyzer의 분석 함수를 직접 실행합니다.
-    raw_data = batch_analyzer.get_analysis_results()
+# [dashboard.py] load_data 함수 교체
+
+# show_spinner=False로 설정 (우리가 직접 진행바를 만들 것이므로)
+@st.cache_data(ttl=600, show_spinner=False)
+def load_data(_progress_bar, _status_text):
+    
+    # batch_analyzer에 전달할 콜백 함수 정의
+    def update_progress(current, total, message):
+        percent = current / total
+        # 진행바는 0.0 ~ 1.0 사이 값이어야 함
+        if percent > 1.0: percent = 1.0
+        
+        _progress_bar.progress(percent)
+        _status_text.text(f"데이터 분석 진행률: {int(percent * 100)}% - {message}")
+
+    # 분석 실행 (콜백 함수 전달)
+    raw_data = batch_analyzer.get_analysis_results(progress_callback=update_progress)
     return pd.DataFrame(raw_data)
 
 def main():
@@ -33,6 +44,16 @@ def main():
     if st.button("🔄 데이터 새로고침"):
         st.cache_data.clear()
         st.rerun()
+    status_text = st.empty()  # 텍스트 표시용
+    progress_bar = st.empty() # 진행바 표시용
+    
+    # load_data에 UI 요소를 인자로 전달 (_변수명 사용)
+    # 처음 실행 시에는 여기서 진행바가 움직이고, 캐시된 데이터가 있으면 순식간에 지나갑니다.
+    df = load_data(progress_bar, status_text)
+    
+    # 로딩 완료 후 진행바와 텍스트 지우기 (선택사항)
+    progress_bar.empty()
+    status_text.empty()    
 
     df = load_data()
 
@@ -425,4 +446,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
