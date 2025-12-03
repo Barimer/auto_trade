@@ -300,17 +300,17 @@ def calculate_metrics(balance, initial_balance, trades, df, strategy_name):
 
 # ... (위쪽 import 및 함수들은 그대로 유지) ...
 
-# --- [수정됨] 메인 실행 함수: 결과를 리턴하도록 변경 ---
-def get_analysis_results():
+# [batch_analyzer.py]의 맨 아래 get_analysis_results 함수를 아래 코드로 교체하세요.
+
+def get_analysis_results(progress_callback=None):
     results = []
     print("Starting Analysis...")
     
     current_time = datetime.now().isoformat()
-    total_tasks = len(ASSET_LIST) * len(INTERVALS) * 3 
-    completed = 0
     
-    # 진행 상황을 표시하기 위해 Streamlit의 progress bar를 쓸 수도 있지만, 
-    # 일단 로직 분리를 위해 순수 파이썬 로직만 남깁니다.
+    # 전체 작업 단계 계산 (코인 개수 x 시간봉 개수)
+    total_steps = len(ASSET_LIST) * len(INTERVALS)
+    current_step = 0
     
     for asset in ASSET_LIST:
         ticker = asset['ticker']
@@ -319,6 +319,12 @@ def get_analysis_results():
         category = asset.get('category', '기타')
         
         for interval in INTERVALS:
+            # --- [진행률 업데이트 로직] ---
+            if progress_callback:
+                # 현재 진행률과 메시지를 전달
+                progress_callback(current_step, total_steps, f"[{name}] {interval}봉 데이터 분석 중...")
+            # ---------------------------
+
             # 데이터 가져오기
             df = get_data(ticker, source, interval)
             
@@ -338,12 +344,18 @@ def get_analysis_results():
                 if res3:
                     results.append({"asset": name, "ticker": ticker, "category": category, "interval": interval, "strategy": "EMA Cross", "timestamp": current_time, **res3})
             
-            completed += 3
+            # 단계 완료 카운트 증가
+            current_step += 1
             
+    # 완료 시 콜백 호출 (100%)
+    if progress_callback:
+        progress_callback(total_steps, total_steps, "분석 완료!")
+
     print("Analysis Complete.")
-    return results  # [중요] JSON 저장 대신 데이터를 반환합니다!
+    return results
 
 # 로컬에서 테스트할 때만 실행되도록 설정
 if __name__ == "__main__":
     data = get_analysis_results()
     print(f"데이터 {len(data)}개 생성 완료")
+
